@@ -5,6 +5,18 @@ project(system_theme_pp)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type to Release for single-config generators.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "Setting build type to 'Release' as none was specified.")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+# Set default startup configuration to Release for multi-config generators.
+if(CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_DEFAULT_BUILD_TYPE Release)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo" CACHE STRING "" FORCE)
+endif()
 
 file(GLOB_RECURSE PRIVATE_CPP_SOURCES "src/shared/*.cpp")
 file(GLOB_RECURSE PRIVATE_HPP_HEADERS "src/shared/*.hpp")
@@ -36,7 +48,7 @@ option(BUILD_EXAMPLES "Build example applications" ON)
 
 if(SHARED_LIBRARY)
     add_library(system_theme_pp SHARED ${PRIVATE_CPP_SOURCES} ${PRIVATE_HPP_HEADERS} ${PRIVATE_C_SOURCES} ${PRIVATE_H_HEADERS} ${PLATFORM_CPP_SOURCES} ${PLATFORM_HPP_HEADERS} ${PLATFORM_C_SOURCES} ${PLATFORM_H_HEADERS})
-    # Copy DLL to the same folder as the executable after build
+
     set_target_properties(system_theme_pp PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     )
