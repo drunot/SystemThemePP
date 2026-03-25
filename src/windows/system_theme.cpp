@@ -2,8 +2,7 @@
 // clang-format off
 #include <windows.h>
 #include <uxtheme.h>
-#include <vssym32.h>
-#include <dwmapi.h>
+#include <shlobj.h> 
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.ViewManagement.h>
 // clang-format on
@@ -87,12 +86,7 @@ namespace system_theme_pp {
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
                        winrt::Windows::Foundation::IInspectable const&) {
                     if(themeChangeCallback) {
-                        SystemThemeInfo info;
-                        getCurrentThemeName(info.themeName, sizeof(info.themeName) / sizeof(wchar_t));
-                        info.isDarkMode      = isDarkMode();
-                        info.foregroundColor = getForegroundColor();
-                        info.backgroundColor = getBackgroundColor();
-                        info.accentColor     = getAccentColor();
+                        SystemThemeInfo info = getCurrentThemeInfo();
                         themeChangeCallback(info, themeChangeCallback_data);
                     }
                 }));
@@ -106,6 +100,46 @@ namespace system_theme_pp {
         }
         themeChangeCallback      = nullptr;
         themeChangeCallback_data = nullptr;
+    }
+
+    void SystemTheme::getSystemDefaultFont(wchar_t* buffer, size_t bufferSize) const {
+        NONCLIENTMETRICSW metrics = {};
+        metrics.cbSize            = sizeof(metrics);
+
+        wchar_t faceName[LF_FACESIZE] = {};
+        if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS, sizeof(metrics), &metrics, 0)) {
+            wcsncpy_s(faceName, metrics.lfMessageFont.lfFaceName, _TRUNCATE);
+        } else {
+            wcsncpy_s(faceName, L"Segoe UI", _TRUNCATE);
+        }
+
+        // First check registry for font file name
+        wchar_t regValue[MAX_PATH] = {};
+        DWORD   regSize            = sizeof(regValue);
+        wchar_t regKey[MAX_PATH]   = {};
+        swprintf_s(regKey, L"%s (TrueType)", faceName);
+
+        LONG result = RegGetValueW(HKEY_LOCAL_MACHINE,
+                                   L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Fonts",
+                                   regKey,
+                                   RRF_RT_REG_SZ,
+                                   nullptr,
+                                   regValue,
+                                   &regSize);
+
+        if(result != ERROR_SUCCESS) {
+            // fallback to Segoe UI
+            wcsncpy_s(regValue, L"segoeui.ttf", _TRUNCATE);
+        }
+
+        // Build full path to font file
+        wchar_t fontsDir[MAX_PATH] = {};
+        SHGetFolderPathW(nullptr, CSIDL_FONTS, nullptr, 0, fontsDir);
+        swprintf_s(buffer, bufferSize, L"%s\\%s", fontsDir, regValue);
+    }
+
+    float SystemTheme::getSystemDefaultFontScale() const {
+        return settings.TextScaleFactor();
     }
 
     SystemTheme::~SystemTheme() {

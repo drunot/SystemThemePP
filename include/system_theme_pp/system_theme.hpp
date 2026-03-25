@@ -12,6 +12,8 @@ namespace system_theme_pp {
         ThemeColors foregroundColor;
         ThemeColors backgroundColor;
         ThemeColors accentColor;
+        wchar_t     systemDefaultFont[512];
+        float       systemDefaultFontScale;
     };
 
     using ThemeChangeCallback = void (*)(const SystemThemeInfo&, void*);
@@ -38,6 +40,11 @@ namespace system_theme_pp {
         void setThemeChangeCallback(ThemeChangeCallback callback, void* data = nullptr);
 
         void removeThemeChangeCallback();
+
+        void  getSystemDefaultFont(wchar_t* buffer, size_t bufferSize) const;
+        float getSystemDefaultFontScale() const;
+
+        SystemThemeInfo getCurrentThemeInfo() const;
 
       private:
 

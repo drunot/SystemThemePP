@@ -21,16 +21,27 @@ struct AppData {
 
 static GLuint          fontTexture;
 static stbtt_bakedchar charData[96];  // ASCII 32..127
+static wchar_t         current_font_path[512] = {0};
 
 #define FONT_SIZE 24.0f
 
-void initFont() {
-    // Load a font from Windows fonts folder
-    std::ifstream              file("C:/Windows/Fonts/segoeui.ttf", std::ios::binary);
+void initFont(const wchar_t* fontPath, float fontSize) {
+    if(wcscmp(current_font_path, fontPath) == 0) {
+        return;  // font already loaded
+    }
+
+    std::ifstream file(fontPath, std::ios::binary);
+    if(!file) {
+        std::wcerr << L"Failed to open font file: " << fontPath << L"\n";
+        return;
+    }
+
+    wcsncpy_s(current_font_path, fontPath, _TRUNCATE);
+
     std::vector<unsigned char> fontBuffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
     std::vector<unsigned char> bitmap(512 * 512);
-    stbtt_BakeFontBitmap(fontBuffer.data(), 0, FONT_SIZE, bitmap.data(), 512, 512, 32, 96, charData);
+    stbtt_BakeFontBitmap(fontBuffer.data(), 0, fontSize, bitmap.data(), 512, 512, 32, 96, charData);
 
     glGenTextures(1, &fontTexture);
     glBindTexture(GL_TEXTURE_2D, fontTexture);
@@ -88,6 +99,7 @@ void drawRect(float x, float y, float w, float h, system_theme_pp::ThemeColors c
 }
 
 void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info) {
+    initFont(info.systemDefaultFont, FONT_SIZE);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -129,14 +141,9 @@ int main() {
     }
 
     glfwMakeContextCurrent(appData.window);
-    initFont();
 
-    auto theme                   = system_theme_pp::SystemTheme::getInstance();
-    appData.info.isDarkMode      = theme.isDarkMode();
-    appData.info.foregroundColor = theme.getForegroundColor();
-    appData.info.backgroundColor = theme.getBackgroundColor();
-    appData.info.accentColor     = theme.getAccentColor();
-    theme.getCurrentThemeName(appData.info.themeName, sizeof(appData.info.themeName) / sizeof(wchar_t));
+    auto theme   = system_theme_pp::SystemTheme::getInstance();
+    appData.info = theme.getCurrentThemeInfo();
     theme.setThemeChangeCallback(themeChangeCallback, &appData);
 
     drawWindow(appData.window, appData.info);
