@@ -47,17 +47,23 @@ void setWindowDarkMode(HWND hwnd, bool darkMode) {
 #define FONT_SIZE 24.0f
 
 void initFont(const wchar_t* fontPath, float fontSize) {
-    if(wcscmp(current_font_path, fontPath) == 0 && current_font_size == fontSize) {
+    if(std::wcscmp(current_font_path, fontPath) == 0 && current_font_size == fontSize) {
         return;  // font already loaded
     }
 
-    std::ifstream file(fontPath, std::ios::binary);
+    // Convert wchar_t* to std::string for cross-platform ifstream compatibility
+    char narrowPath[512];
+    std::wcstombs(narrowPath, fontPath, sizeof(narrowPath) - 1);
+    narrowPath[sizeof(narrowPath) - 1] = '\0';
+
+    std::ifstream file(narrowPath, std::ios::binary);
     if(!file) {
         std::wcerr << L"Failed to open font file: " << fontPath << L"\n";
         return;
     }
 
-    wcsncpy_s(current_font_path, fontPath, _TRUNCATE);
+    std::wcsncpy(current_font_path, fontPath, sizeof(current_font_path) / sizeof(current_font_path[0]) - 1);
+    current_font_path[sizeof(current_font_path) / sizeof(current_font_path[0]) - 1] = L'\0';
     current_font_size = fontSize;
 
     std::vector<unsigned char> fontBuffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -170,6 +176,7 @@ int main() {
     theme.setThemeChangeCallback(themeChangeCallback, &appData);
 
     drawWindow(appData.window, appData.info);
+    std::cout << "Accent color: RGB(" << (int)appData.info.accentColor.r << ", " << (int)appData.info.accentColor.g << ", " << (int)appData.info.accentColor.b << ")\n";
 
     while(!glfwWindowShouldClose(appData.window)) {
         glfwWaitEvents();                          // sleep until an event occurs

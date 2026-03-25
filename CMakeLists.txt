@@ -68,7 +68,21 @@ if(WIN32)
     target_link_libraries(system_theme_pp PRIVATE UxTheme WindowsApp Microsoft::CppWinRT)
     target_compile_options(system_theme_pp PRIVATE /await)
 elseif(UNIX AND NOT APPLE)
-    target_include_directories(system_theme_pp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/linux)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
+    pkg_check_modules(GIO REQUIRED gio-2.0)
+    find_package(DBus1 REQUIRED)
+    target_link_libraries(system_theme_pp PRIVATE dbus-1)
+
+    target_include_directories(system_theme_pp PRIVATE 
+        ${CMAKE_CURRENT_LIST_DIR}/src/linux 
+        ${FONTCONFIG_INCLUDE_DIRS} 
+        ${GIO_INCLUDE_DIRS}
+    )
+    target_link_libraries(system_theme_pp PRIVATE 
+        ${FONTCONFIG_LIBRARIES} 
+        ${GIO_LIBRARIES}
+    )
 elseif(APPLE)
     target_include_directories(system_theme_pp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/macos)
 endif()

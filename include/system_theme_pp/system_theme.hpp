@@ -3,6 +3,7 @@
 
 #include <system_theme_pp/core.hpp>
 #include <system_theme_pp/types.hpp>
+#include <cstdlib>
 
 namespace system_theme_pp {
 

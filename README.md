@@ -1,6 +1,6 @@
 # SystemTheme++
 
-This is a C++ library that retrieves system theme information from both Window, Linux and in the future also Mac OS.
+This is a **very work in progress** C++ library that retrieves system theme information from both Window, Linux and in the future also Mac OS.
 
 ## Setup
 
