@@ -5,16 +5,29 @@ project(system_theme_pp)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+string(REGEX MATCH "^Visual Studio" VS_GENERATOR_MATCH "${CMAKE_GENERATOR}")
+
+if(VS_GENERATOR_MATCH MATCHES "Visual Studio")
+    set(IS_VS_GENERATOR TRUE)
+else()
+    set(IS_VS_GENERATOR FALSE)
+endif()
+
+
+message("Generator: ${IS_VS_GENERATOR}")
 # Set default build type to Release for single-config generators.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to 'Release' as none was specified.")
+
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
 # Set default startup configuration to Release for multi-config generators.
 if(CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_DEFAULT_BUILD_TYPE Release)
+    if(NOT IS_VS_GENERATOR)
+        set(CMAKE_DEFAULT_BUILD_TYPE Release)
+    endif()
     set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo" CACHE STRING "" FORCE)
 endif()
 

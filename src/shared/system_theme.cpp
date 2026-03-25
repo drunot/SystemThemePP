@@ -1,6 +1,11 @@
 #include <system_theme_pp/system_theme.hpp>
 
 namespace system_theme_pp {
+    SystemTheme& SystemTheme::getInstance() {
+        static SystemTheme instance;
+        return instance;
+    }
+
     SystemThemeInfo SystemTheme::getCurrentThemeInfo() const {
         SystemThemeInfo info;
         getCurrentThemeName(info.themeName, sizeof(info.themeName) / sizeof(wchar_t));

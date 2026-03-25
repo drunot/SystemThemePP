@@ -1,9 +1,11 @@
 #ifndef E406110C_0236_43AF_AF02_300231E54175
 #define E406110C_0236_43AF_AF02_300231E54175
 
+#include <cstdlib>
+
 #include <system_theme_pp/core.hpp>
 #include <system_theme_pp/types.hpp>
-#include <cstdlib>
+
 
 namespace system_theme_pp {
 
@@ -25,10 +27,7 @@ namespace system_theme_pp {
 
         ~SystemTheme();
 
-        static SystemTheme& getInstance() {
-            static SystemTheme instance;
-            return instance;
-        }
+        static SystemTheme& getInstance();
 
         void getCurrentThemeName(wchar_t* buffer, size_t bufferSize) const;
 
