@@ -18,12 +18,14 @@ macro(add_example EXAMPLE_NAME EXAMPLE_DIR)
 
     target_link_libraries(${EXAMPLE_NAME} PRIVATE system_theme_pp)
 
-    # Copy DLL next to the executable after build
-    add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:system_theme_pp>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
-    )
+    if(WIN32)
+        # Copy DLL next to the executable after build
+        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:system_theme_pp>
+                $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+        )
+    endif()
 endmacro()
 
 
