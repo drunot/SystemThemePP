@@ -1,0 +1,153 @@
+#include <fstream>
+#include <iostream>
+#include <vector>
+
+#include <GLFW/glfw3.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb_truetype.h>
+
+#ifdef _WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#endif
+
+#include <system_theme_pp/system_theme.hpp>
+
+struct AppData {
+    GLFWwindow*                      window;
+    system_theme_pp::SystemThemeInfo info;
+};
+
+static GLuint          fontTexture;
+static stbtt_bakedchar charData[96];  // ASCII 32..127
+
+#define FONT_SIZE 24.0f
+
+void initFont() {
+    // Load a font from Windows fonts folder
+    std::ifstream              file("C:/Windows/Fonts/segoeui.ttf", std::ios::binary);
+    std::vector<unsigned char> fontBuffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    std::vector<unsigned char> bitmap(512 * 512);
+    stbtt_BakeFontBitmap(fontBuffer.data(), 0, FONT_SIZE, bitmap.data(), 512, 512, 32, 96, charData);
+
+    glGenTextures(1, &fontTexture);
+    glBindTexture(GL_TEXTURE_2D, fontTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 512, 512, 0, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap.data());
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+}
+
+void drawText(const char* text, float x, float y, system_theme_pp::ThemeColors color) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, fontTexture);
+    glColor3f(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f);
+
+    glBegin(GL_QUADS);
+    while(*text) {
+        if(*text >= 32 && *text < 128) {
+            stbtt_aligned_quad q;
+            stbtt_GetBakedQuad(charData, 512, 512, *text - 32, &x, &y, &q, 1);
+            glTexCoord2f(q.s0, q.t0);
+            glVertex2f(q.x0, q.y0);
+            glTexCoord2f(q.s1, q.t0);
+            glVertex2f(q.x1, q.y0);
+            glTexCoord2f(q.s1, q.t1);
+            glVertex2f(q.x1, q.y1);
+            glTexCoord2f(q.s0, q.t1);
+            glVertex2f(q.x0, q.y1);
+        }
+        text++;
+    }
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+}
+
+float getTextWidth(const char* text) {
+    float width = 0;
+    while(*text) {
+        if(*text >= 32 && *text < 128) {
+            width += charData[*text - 32].xadvance;
+        }
+        text++;
+    }
+    return width;
+}
+
+void drawRect(float x, float y, float w, float h, system_theme_pp::ThemeColors color) {
+    glColor3f(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f);
+    glBegin(GL_QUADS);
+    glVertex2f(x, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x, y + h);
+    glEnd();
+}
+
+void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info) {
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    glViewport(0, 0, width, height);
+
+    glClearColor(
+        info.backgroundColor.r / 255.0f, info.backgroundColor.g / 255.0f, info.backgroundColor.b / 255.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, width, height, 0, -1, 1);  // flip Y so text is not upside down
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    const char text[] = "Hello, GLFW!";
+
+    drawRect(0, 0, width, 20, info.accentColor);
+    drawText(text, (width - getTextWidth(text)) / 2.0f, (height + FONT_SIZE) / 2.0f, info.foregroundColor);
+
+    glfwSwapBuffers(window);
+}
+
+void themeChangeCallback(const system_theme_pp::SystemThemeInfo& info, void* data) {
+    auto appData  = static_cast<AppData*>(data);
+    appData->info = info;  // update info from background thread
+    glfwPostEmptyEvent();  // wake up glfwWaitEvents if sleeping
+}
+
+int main() {
+    if(!glfwInit()) return -1;
+
+    AppData appData;
+    appData.window = glfwCreateWindow(640, 480, "Hello, GLFW!", nullptr, nullptr);
+    if(!appData.window) {
+        glfwTerminate();
+        return -1;
+    }
+
+    glfwMakeContextCurrent(appData.window);
+    initFont();
+
+    auto theme                   = system_theme_pp::SystemTheme::getInstance();
+    appData.info.isDarkMode      = theme.isDarkMode();
+    appData.info.foregroundColor = theme.getForegroundColor();
+    appData.info.backgroundColor = theme.getBackgroundColor();
+    appData.info.accentColor     = theme.getAccentColor();
+    theme.getCurrentThemeName(appData.info.themeName, sizeof(appData.info.themeName) / sizeof(wchar_t));
+    theme.setThemeChangeCallback(themeChangeCallback, &appData);
+
+    drawWindow(appData.window, appData.info);
+
+    while(!glfwWindowShouldClose(appData.window)) {
+        glfwWaitEvents();                          // sleep until an event occurs
+
+        drawWindow(appData.window, appData.info);  // redraw on main thread
+    }
+
+    glfwDestroyWindow(appData.window);
+    glfwTerminate();
+    return 0;
+}

@@ -1,0 +1,6 @@
+[submodule "examples/external/glfw"]
+	path = examples/external/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "examples/external/stb"]
+	path = examples/external/stb
+	url = https://github.com/nothings/stb.git

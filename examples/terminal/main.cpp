@@ -2,25 +2,37 @@
 
 #include <system_theme_pp/system_theme.hpp>
 
+void themeChangeCallback(const system_theme_pp::SystemThemeInfo& info, void* data) {
+    std::wcout << L"Theme changed: " << info.themeName << L", Dark mode: " << (info.isDarkMode ? "Yes" : "No") << L"\n";
+    std::wcout << L"Foreground: RGB(" << info.foregroundColor.r << ", " << info.foregroundColor.g << ", "
+               << info.foregroundColor.b << L")\n";
+    std::wcout << L"Background: RGB(" << info.backgroundColor.r << ", " << info.backgroundColor.g << ", "
+               << info.backgroundColor.b << L")\n";
+    std::wcout << L"Accent:     RGB(" << info.accentColor.r << ", " << info.accentColor.g << ", " << info.accentColor.b
+               << L")\n";
+}
+
 int main() {
-    wchar_t buffer[256] = {0};
-    system_theme_pp::getCurrentThemeName(buffer, sizeof(buffer) / sizeof(wchar_t));
-    std::wcout << L"Current Theme: " << buffer << std::endl;
 
-    bool darkMode = system_theme_pp::isDarkMode();
-    std::cout << "Is Dark Mode: " << (darkMode ? "Yes" : "No") << std::endl;
+    std::cout << "Press enter to exit...\n";
 
-    auto foregroundColor = system_theme_pp::getForegroundColor();
-    std::cout << "Foreground Color: RGB(" << foregroundColor.r << ", " << foregroundColor.g << ", " << foregroundColor.b
-              << ")" << std::endl;
+    auto theme = system_theme_pp::SystemTheme::getInstance();
 
-    auto backgroundColor = system_theme_pp::getBackgroundColor();
-    std::cout << "Background Color: RGB(" << backgroundColor.r << ", " << backgroundColor.g << ", " << backgroundColor.b
-              << ")" << std::endl;
+    system_theme_pp::SystemThemeInfo info;
+    theme.getCurrentThemeName(info.themeName, sizeof(info.themeName) / sizeof(wchar_t));
+    info.isDarkMode      = theme.isDarkMode();
+    info.foregroundColor = theme.getForegroundColor();
+    info.backgroundColor = theme.getBackgroundColor();
+    info.accentColor     = theme.getAccentColor();
+    theme.setThemeChangeCallback(themeChangeCallback);
 
-    auto accentColor = system_theme_pp::getAccentColor();
-    std::cout << "Accent Color: RGB(" << accentColor.r << ", " << accentColor.g << ", " << accentColor.b << ")"
-              << std::endl;
+    themeChangeCallback(info, nullptr);
+
+    for(;;) {
+        if(std::cin.get() == '\n') {
+            break;
+        }
+    }
 
     return 0;
 }

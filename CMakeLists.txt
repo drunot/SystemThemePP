@@ -51,8 +51,10 @@ target_include_directories(system_theme_pp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src
 
 
 if(WIN32)
+    find_package(cppwinrt CONFIG REQUIRED)
     target_include_directories(system_theme_pp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/windows)
-    target_link_libraries(system_theme_pp PRIVATE UxTheme dwmapi)
+    target_link_libraries(system_theme_pp PRIVATE UxTheme dwmapi WindowsApp Microsoft::CppWinRT)
+    target_compile_options(system_theme_pp PRIVATE /await)
 elseif(UNIX AND NOT APPLE)
     target_include_directories(system_theme_pp PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/linux)
 elseif(APPLE)

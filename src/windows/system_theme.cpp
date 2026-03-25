@@ -4,18 +4,28 @@
 #include <uxtheme.h>
 #include <vssym32.h>
 #include <dwmapi.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.UI.ViewManagement.h>
 // clang-format on
 #include <iostream>
 
 #include <system_theme_pp/system_theme.hpp>
 
 namespace system_theme_pp {
-    void getCurrentThemeName(wchar_t* buffer, size_t bufferSize) {
+
+    static struct winrt::Windows::UI::ViewManagement::UISettings settings;
+
+    SystemTheme::SystemTheme() {
+        // Initialize any necessary resources here
+        settings = winrt::Windows::UI::ViewManagement::UISettings();
+    }
+
+    void SystemTheme::getCurrentThemeName(wchar_t* buffer, size_t bufferSize) const {
         // Get the current theme color scheme
         GetCurrentThemeName(buffer, static_cast<int>(bufferSize), nullptr, 0, nullptr, 0);
     }
 
-    bool isDarkMode() {
+    bool SystemTheme::isDarkMode() const {
         DWORD value  = 0;
         DWORD size   = sizeof(value);
         LONG  result = RegGetValueW(HKEY_CURRENT_USER,
@@ -33,73 +43,72 @@ namespace system_theme_pp {
         return value == 0;  // 0 = dark mode, 1 = light mode
     }
 
-    ThemeColors getForegroundColor() {
+    ThemeColors SystemTheme::getForegroundColor() const {
         ThemeColors colors;
-
-        HTHEME hTheme = OpenThemeData(nullptr, L"TEXTSTYLE");
-        if(hTheme) {
-            COLORREF color = 0;
-            if(SUCCEEDED(GetThemeColor(hTheme, TEXT_BODYTEXT, 1, TMT_TEXTCOLOR, &color))) {
-                std::cout << "Got foreground color from theme: " << std::hex << color << std::dec << std::endl;
-                colors.r = GetRValue(color);
-                colors.g = GetGValue(color);
-                colors.b = GetBValue(color);
-                CloseThemeData(hTheme);
-                return colors;
-            }
-            CloseThemeData(hTheme);
-        }
-
-        // fallback
-        colors.r = isDarkMode() ? 255 : 0;
-        colors.g = isDarkMode() ? 255 : 0;
-        colors.b = isDarkMode() ? 255 : 0;
+        auto        color = settings.GetColorValue(winrt::Windows::UI::ViewManagement::UIColorType::Foreground);
+        colors.r          = color.R;
+        colors.g          = color.G;
+        colors.b          = color.B;
         return colors;
     }
 
-    ThemeColors getBackgroundColor() {
+    ThemeColors SystemTheme::getBackgroundColor() const {
         ThemeColors colors;
 
-        HTHEME hTheme = OpenThemeData(nullptr, L"WINDOW");
-        if(hTheme) {
-            COLORREF color = 0;
-            if(SUCCEEDED(GetThemeColor(hTheme, 1, 1, TMT_FILLCOLOR, &color))) {
-                std::cout << "Got background color from theme: " << std::hex << color << std::dec << std::endl;
-                colors.r = GetRValue(color);
-                colors.g = GetGValue(color);
-                colors.b = GetBValue(color);
-                CloseThemeData(hTheme);
-                return colors;
-            }
-            CloseThemeData(hTheme);
-        }
+        auto color = settings.GetColorValue(winrt::Windows::UI::ViewManagement::UIColorType::Background);
+        colors.r   = color.R;
+        colors.g   = color.G;
+        colors.b   = color.B;
 
-        // fallback
-        colors.r = isDarkMode() ? 32 : 255;
-        colors.g = isDarkMode() ? 32 : 255;
-        colors.b = isDarkMode() ? 32 : 255;
         return colors;
     }
 
-    ThemeColors getAccentColor() {
+    ThemeColors SystemTheme::getAccentColor() const {
         ThemeColors colors;
 
-        DWORD   color  = 0;
-        BOOL    opaque = FALSE;
-        HRESULT result = DwmGetColorizationColor(&color, &opaque);
-
-        if(FAILED(result)) {
-            colors.r = 0;
-            colors.g = 0;
-            colors.b = 0;
-            return colors;
-        }
-
-        // color is in 0xAARRGGBB format
-        colors.r = (color >> 16) & 0xFF;
-        colors.g = (color >> 8) & 0xFF;
-        colors.b = (color) & 0xFF;
+        auto color = settings.GetColorValue(winrt::Windows::UI::ViewManagement::UIColorType::Accent);
+        colors.r   = color.R;
+        colors.g   = color.G;
+        colors.b   = color.B;
 
         return colors;
+    }
+
+    static struct winrt::event_token themeChangeRevoker;
+    static bool                      themeChangeHooked = false;
+    void                             SystemTheme::setThemeChangeCallback(ThemeChangeCallback callback, void* data) {
+        themeChangeCallback      = callback;
+        themeChangeCallback_data = data;
+        // You would need to set up a Windows event hook here to listen for theme changes
+        // and call the callback when a change is detected.
+        themeChangeRevoker       = settings.ColorValuesChanged(
+            winrt::Windows::Foundation::TypedEventHandler<winrt::Windows::UI::ViewManagement::UISettings,
+                                                                                            winrt::Windows::Foundation::IInspectable>(
+                [this](winrt::Windows::UI::ViewManagement::UISettings const&,
+                       winrt::Windows::Foundation::IInspectable const&) {
+                    if(themeChangeCallback) {
+                        SystemThemeInfo info;
+                        getCurrentThemeName(info.themeName, sizeof(info.themeName) / sizeof(wchar_t));
+                        info.isDarkMode      = isDarkMode();
+                        info.foregroundColor = getForegroundColor();
+                        info.backgroundColor = getBackgroundColor();
+                        info.accentColor     = getAccentColor();
+                        themeChangeCallback(info, themeChangeCallback_data);
+                    }
+                }));
+        themeChangeHooked = true;
+    };
+
+    void SystemTheme::removeThemeChangeCallback() {
+        if(themeChangeHooked) {
+            settings.ColorValuesChanged(themeChangeRevoker);
+            themeChangeHooked = false;
+        }
+        themeChangeCallback      = nullptr;
+        themeChangeCallback_data = nullptr;
+    }
+
+    SystemTheme::~SystemTheme() {
+        removeThemeChangeCallback();
     }
 }  // namespace system_theme_pp
