@@ -73,14 +73,16 @@ namespace system_theme_pp {
         return colors;
     }
 
-    static struct winrt::event_token themeChangeRevoker;
-    static bool                      themeChangeHooked = false;
+    static struct winrt::event_token colorChangeRevoker;
+    static bool                      colorChangeHooked = false;
+    static struct winrt::event_token textScaleChangeRevoker;
+    static bool                      textScaleChangeHooked = false;
     void                             SystemTheme::setThemeChangeCallback(ThemeChangeCallback callback, void* data) {
         themeChangeCallback      = callback;
         themeChangeCallback_data = data;
         // You would need to set up a Windows event hook here to listen for theme changes
         // and call the callback when a change is detected.
-        themeChangeRevoker       = settings.ColorValuesChanged(
+        colorChangeRevoker       = settings.ColorValuesChanged(
             winrt::Windows::Foundation::TypedEventHandler<winrt::Windows::UI::ViewManagement::UISettings,
                                                                                             winrt::Windows::Foundation::IInspectable>(
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
@@ -90,14 +92,32 @@ namespace system_theme_pp {
                         themeChangeCallback(info, themeChangeCallback_data);
                     }
                 }));
-        themeChangeHooked = true;
+        colorChangeHooked = true;
+
+        textScaleChangeRevoker = settings.TextScaleFactorChanged(
+            winrt::Windows::Foundation::TypedEventHandler<winrt::Windows::UI::ViewManagement::UISettings,
+                                                                                      winrt::Windows::Foundation::IInspectable>(
+                [this](winrt::Windows::UI::ViewManagement::UISettings const&,
+                       winrt::Windows::Foundation::IInspectable const&) {
+                    if(themeChangeCallback) {
+                        SystemThemeInfo info = getCurrentThemeInfo();
+                        themeChangeCallback(info, themeChangeCallback_data);
+                    }
+                }));
+
+        textScaleChangeHooked = true;
     };
 
     void SystemTheme::removeThemeChangeCallback() {
-        if(themeChangeHooked) {
-            settings.ColorValuesChanged(themeChangeRevoker);
-            themeChangeHooked = false;
+        if(colorChangeHooked) {
+            settings.ColorValuesChanged(colorChangeRevoker);
+            colorChangeHooked = false;
         }
+        if(textScaleChangeHooked) {
+            settings.TextScaleFactorChanged(textScaleChangeRevoker);
+            textScaleChangeHooked = false;
+        }
+
         themeChangeCallback      = nullptr;
         themeChangeCallback_data = nullptr;
     }

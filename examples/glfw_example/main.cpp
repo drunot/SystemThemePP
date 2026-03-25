@@ -22,11 +22,32 @@ struct AppData {
 static GLuint          fontTexture;
 static stbtt_bakedchar charData[96];  // ASCII 32..127
 static wchar_t         current_font_path[512] = {0};
+static float           current_font_size      = 0.0f;
+
+// Windows dark mode support. On other platforms this is a no-op.
+#ifdef _WIN32
+#include <dwmapi.h>
+
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+
+void setWindowDarkMode(HWND hwnd, bool darkMode) {
+    BOOL useDarkMode = darkMode ? TRUE : FALSE;
+    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+}
+
+#define SET_DARK_MODE(hwnd, darkMode) setWindowDarkMode(hwnd, darkMode)
+
+#else
+#define SET_DARK_MODE(hwnd, darkMode) ((void) 0)
+
+#endif
 
 #define FONT_SIZE 24.0f
 
 void initFont(const wchar_t* fontPath, float fontSize) {
-    if(wcscmp(current_font_path, fontPath) == 0) {
+    if(wcscmp(current_font_path, fontPath) == 0 && current_font_size == fontSize) {
         return;  // font already loaded
     }
 
@@ -37,6 +58,7 @@ void initFont(const wchar_t* fontPath, float fontSize) {
     }
 
     wcsncpy_s(current_font_path, fontPath, _TRUNCATE);
+    current_font_size = fontSize;
 
     std::vector<unsigned char> fontBuffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
@@ -99,7 +121,8 @@ void drawRect(float x, float y, float w, float h, system_theme_pp::ThemeColors c
 }
 
 void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info) {
-    initFont(info.systemDefaultFont, FONT_SIZE);
+    SET_DARK_MODE(glfwGetWin32Window(window), info.isDarkMode);
+    initFont(info.systemDefaultFont, FONT_SIZE * info.systemDefaultFontScale);
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
