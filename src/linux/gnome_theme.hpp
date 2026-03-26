@@ -2,6 +2,7 @@
 #define FD9366B4_C10B_43BB_B884_2476555045AD
 
 #include <cstdint>
+#include <cstdlib>
 #include <system_theme_pp/core.hpp>
 #include <system_theme_pp/types.hpp>
 
@@ -15,24 +16,37 @@ struct SYSTEM_THEME_PP_PRIVATE Gdk4RGBACompat {
 };
 class SYSTEM_THEME_PP_PRIVATE GnomeTheme {
 public:
-  ThemeColors gnomeGetColor(const char *colorName) const;
   virtual ThemeColors getBackgroundColor() const = 0;
   virtual ThemeColors getForegroundColor() const = 0;
   static const GnomeTheme &getInstance();
+  float getSystemDefaultFontScale() const;
+  void getSystemDefaultFont(wchar_t *buffer,
+                                       size_t bufferSize) const;
+  virtual void getCurrentThemeName(wchar_t *buffer,
+                                      size_t bufferSize) const = 0;
 
 };
 
 class SYSTEM_THEME_PP_PRIVATE GTK3Theme : public GnomeTheme {
 public:
   GTK3Theme();
+  GTK3Theme(void*_handler);
+
+  static void* GTK3CheckLoaded();
+  static void* loadGTK3();
 
   bool isInitialized() const;
   bool initCheck() const;
   bool lookupNamedColor(const char *colorName, Gdk3RGBACompat *color) const;
   ThemeColors getBackgroundColor() const override;
   ThemeColors getForegroundColor() const override;
+  void getCurrentThemeName(wchar_t *buffer,
+                                      size_t bufferSize) const override;
 
 private:
+  
+  void getFunctions();
+
   using gdk_display_get_default_t = void *(*)();
   gdk_display_get_default_t gdk_display_get_default = nullptr;
 
@@ -52,23 +66,50 @@ private:
   void *handle = nullptr;
 };
 
-class SYSTEM_THEME_PP_PRIVATE AdwaitaTheme : public GnomeTheme {
+class SYSTEM_THEME_PP_PRIVATE GTK4Theme : public GnomeTheme {
 public:
-  AdwaitaTheme();
-  
+  GTK4Theme();
+  GTK4Theme(void*_handler);
+
+  static void* GTK4CheckLoaded();
+  static void* loadGTK4();
+
   ThemeColors getBackgroundColor() const override;
   ThemeColors getForegroundColor() const override;
+
+  void getCurrentThemeName(wchar_t *buffer,
+                                      size_t bufferSize) const override;
 private:
-  using adw_style_manager_get_default_t = void *(*)();
-  adw_style_manager_get_default_t adw_style_manager_get_default = nullptr;
 
-  using adw_style_manager_get_accent_color_t = int (*)(void *);
-  adw_style_manager_get_accent_color_t adw_style_manager_get_accent_color = nullptr;
+  void getFunctions();
 
-  using adw_accent_color_to_rgba_t = void (*)(int, Gdk4RGBACompat *);
-  adw_accent_color_to_rgba_t adw_accent_color_to_rgba = nullptr;
+  using gdk_display_get_default_t = void *(*)();
+  gdk_display_get_default_t gdk_display_get_default = nullptr;
+
+  using gtk_init_t = void (*)();
+  gtk_init_t gtk_init = nullptr;
+
+  using gtk_init_check_t = bool (*)();
+  gtk_init_check_t gtk_init_check = nullptr;
+
+  using gtk_window_new_t = void *(*)();
+  gtk_window_new_t gtk_window_new = nullptr;
+
+  using gtk_widget_get_style_context_t = void *(*)(void *widget);
+  gtk_widget_get_style_context_t gtk_widget_get_style_context = nullptr;
+
+  using gtk_style_context_lookup_color_t = bool (*)(void *, const char *,
+                                                    Gdk4RGBACompat *);
+  gtk_style_context_lookup_color_t gtk_style_context_lookup_color = nullptr;
+
+  using gtk_window_destroy_t = void (*)(void *widget);
+  gtk_window_destroy_t gtk_window_destroy = nullptr;
+
+  using g_object_unref_t = void (*)(void *);
+  g_object_unref_t g_object_unref = nullptr;
 
   void *handle = nullptr;
+
 };
 }
 

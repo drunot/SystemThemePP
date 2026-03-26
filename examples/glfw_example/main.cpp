@@ -176,7 +176,7 @@ int main() {
     theme.setThemeChangeCallback(themeChangeCallback, &appData);
 
     drawWindow(appData.window, appData.info);
-    std::cout << "Accent color: RGB(" << (int)appData.info.accentColor.r << ", " << (int)appData.info.accentColor.g << ", " << (int)appData.info.accentColor.b << ")\n";
+    std::wcout << L"Current theme: " << appData.info.themeName << L"\n";
 
     while(!glfwWindowShouldClose(appData.window)) {
         glfwWaitEvents();                          // sleep until an event occurs
