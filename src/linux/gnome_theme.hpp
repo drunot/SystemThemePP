@@ -46,6 +46,7 @@ public:
 private:
   
   void getFunctions();
+  void ResetGTKStyleContext() const;
 
   using gdk_display_get_default_t = void *(*)();
   gdk_display_get_default_t gdk_display_get_default = nullptr;
@@ -62,6 +63,12 @@ private:
 
   using g_object_unref_t = void (*)(void *);
   g_object_unref_t g_object_unref = nullptr;
+
+  using gtk_style_context_reset_widgets_t = void (*)(void *);
+  gtk_style_context_reset_widgets_t gtk_style_context_reset_widgets = nullptr;
+
+  using g_main_context_iteration_t = bool (*)(void *, bool);
+  g_main_context_iteration_t g_main_context_iteration = nullptr;
 
   void *handle = nullptr;
 };
@@ -82,6 +89,7 @@ public:
 private:
 
   void getFunctions();
+  void ResetGTKStyleContext() const;
 
   using gdk_display_get_default_t = void *(*)();
   gdk_display_get_default_t gdk_display_get_default = nullptr;
@@ -107,6 +115,12 @@ private:
 
   using g_object_unref_t = void (*)(void *);
   g_object_unref_t g_object_unref = nullptr;
+
+  using gtk_style_context_reset_widgets_t = void (*)();
+  gtk_style_context_reset_widgets_t gtk_style_context_reset_widgets = nullptr;
+
+  using g_main_context_iteration_t = bool (*)(void *, bool);
+  g_main_context_iteration_t g_main_context_iteration = nullptr;
 
   void *handle = nullptr;
 

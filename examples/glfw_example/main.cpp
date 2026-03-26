@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 #include <GLFW/glfw3.h>
 
@@ -17,6 +18,7 @@
 struct AppData {
     GLFWwindow*                      window;
     system_theme_pp::SystemThemeInfo info;
+    std::mutex                        mutex;
 };
 
 static GLuint          fontTexture;
@@ -70,6 +72,12 @@ void initFont(const wchar_t* fontPath, float fontSize) {
 
     std::vector<unsigned char> bitmap(512 * 512);
     stbtt_BakeFontBitmap(fontBuffer.data(), 0, fontSize, bitmap.data(), 512, 512, 32, 96, charData);
+
+
+    if(fontTexture) {
+        glDeleteTextures(1, &fontTexture);
+        fontTexture = 0;
+    }
 
     glGenTextures(1, &fontTexture);
     glBindTexture(GL_TEXTURE_2D, fontTexture);
@@ -155,7 +163,10 @@ void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info
 
 void themeChangeCallback(const system_theme_pp::SystemThemeInfo& info, void* data) {
     auto appData  = static_cast<AppData*>(data);
-    appData->info = info;  // update info from background thread
+    {
+        std::lock_guard<std::mutex> lock(appData->mutex);
+        appData->info = info;  // update info from background thread
+    }
     glfwPostEmptyEvent();  // wake up glfwWaitEvents if sleeping
 }
 
@@ -171,7 +182,7 @@ int main() {
 
     glfwMakeContextCurrent(appData.window);
 
-    auto theme   = system_theme_pp::SystemTheme::getInstance();
+    auto& theme   = system_theme_pp::SystemTheme::getInstance();
     appData.info = theme.getCurrentThemeInfo();
     theme.setThemeChangeCallback(themeChangeCallback, &appData);
 
@@ -181,7 +192,12 @@ int main() {
     while(!glfwWindowShouldClose(appData.window)) {
         glfwWaitEvents();                          // sleep until an event occurs
 
-        drawWindow(appData.window, appData.info);  // redraw on main thread
+        system_theme_pp::SystemThemeInfo infoTmp;
+        {
+            std::lock_guard<std::mutex> lock(appData.mutex);
+            infoTmp = appData.info;
+        }
+        drawWindow(appData.window, infoTmp);  // redraw on main thread
     }
 
     glfwDestroyWindow(appData.window);
