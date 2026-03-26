@@ -5,6 +5,8 @@
 #include <cwchar>
 #include <dbus/dbus.h>
 #include <fstream>
+#include <thread>
+#include <atomic>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -135,10 +137,66 @@ ThemeColors SystemTheme::getAccentColor() const {
   return {(uint8_t)(r * 255), (uint8_t)(g * 255), (uint8_t)(b * 255)};
 }
 
-void SystemTheme::setThemeChangeCallback(ThemeChangeCallback callback,
-                                         void *data) {}
+static DBusConnection *signalConn = nullptr;
+static std::thread signalThread;
+static std::atomic<bool> signalThreadRunning{false};
 
-void SystemTheme::removeThemeChangeCallback() {}
+static void signalThreadFunc() {
+  while (signalThreadRunning) {
+    dbus_connection_read_write(signalConn, 100);
+    DBusMessage *msg = dbus_connection_pop_message(signalConn);
+    if (!msg) continue;
+
+    if (dbus_message_is_signal(msg, "org.freedesktop.portal.Settings",
+                               "SettingChanged")) {
+        auto& systemTheme = SystemTheme::getInstance();
+        systemTheme.callCallback();
+    }
+    dbus_message_unref(msg);
+  }
+}
+
+void SystemTheme::setThemeChangeCallback(ThemeChangeCallback callback,
+                                         void *data) {
+  themeChangeCallback = callback;
+  themeChangeCallback_data = data;
+
+  if (signalThreadRunning) return;
+
+  DBusError err;
+  dbus_error_init(&err);
+  signalConn = dbus_bus_get(DBUS_BUS_SESSION, &err);
+  if (!signalConn || dbus_error_is_set(&err)) {
+    dbus_error_free(&err);
+    return;
+  }
+
+  dbus_bus_add_match(signalConn,
+    "type='signal',"
+    "interface='org.freedesktop.portal.Settings',"
+    "member='SettingChanged',"
+    "path='/org/freedesktop/portal/desktop'",
+    &err);
+  dbus_connection_flush(signalConn);
+
+  if (dbus_error_is_set(&err)) {
+    dbus_error_free(&err);
+    return;
+  }
+
+
+
+  signalThreadRunning = true;
+  signalThread = std::thread(signalThreadFunc);
+}
+
+void SystemTheme::removeThemeChangeCallback() {
+  themeChangeCallback = nullptr;
+  themeChangeCallback_data = nullptr;
+  signalThreadRunning = false;
+  if (signalThread.joinable())
+    signalThread.join();
+}
 
 void SystemTheme::getSystemDefaultFont(wchar_t *buffer,
                                        size_t bufferSize) const {
@@ -152,5 +210,12 @@ float SystemTheme::getSystemDefaultFontScale() const {
 }
 
 SystemTheme::SystemTheme() = default;
-SystemTheme::~SystemTheme() = default;
+SystemTheme::~SystemTheme(){
+  if(signalThreadRunning) {
+    signalThreadRunning = false;
+    if(signalThread.joinable()) {
+        signalThread.join();
+    }
+  }
+};
 } // namespace system_theme_pp

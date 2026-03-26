@@ -18,7 +18,7 @@ int main() {
 
     std::cout << "Press enter to exit...\n";
 
-    auto theme = system_theme_pp::SystemTheme::getInstance();
+    auto& theme = system_theme_pp::SystemTheme::getInstance();
 
     system_theme_pp::SystemThemeInfo info = theme.getCurrentThemeInfo();
     theme.setThemeChangeCallback(themeChangeCallback);

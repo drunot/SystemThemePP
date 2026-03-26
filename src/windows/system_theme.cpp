@@ -87,10 +87,7 @@ namespace system_theme_pp {
                                                                                             winrt::Windows::Foundation::IInspectable>(
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
                        winrt::Windows::Foundation::IInspectable const&) {
-                    if(themeChangeCallback) {
-                        SystemThemeInfo info = getCurrentThemeInfo();
-                        themeChangeCallback(info, themeChangeCallback_data);
-                    }
+                    callCallback();
                 }));
         colorChangeHooked = true;
 
@@ -99,10 +96,7 @@ namespace system_theme_pp {
                                                                                       winrt::Windows::Foundation::IInspectable>(
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
                        winrt::Windows::Foundation::IInspectable const&) {
-                    if(themeChangeCallback) {
-                        SystemThemeInfo info = getCurrentThemeInfo();
-                        themeChangeCallback(info, themeChangeCallback_data);
-                    }
+                    callCallback();
                 }));
 
         textScaleChangeHooked = true;

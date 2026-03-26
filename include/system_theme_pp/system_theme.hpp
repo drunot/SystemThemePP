@@ -17,6 +17,7 @@ namespace system_theme_pp {
         ThemeColors accentColor;
         wchar_t     systemDefaultFont[512];
         float       systemDefaultFontScale;
+
     };
 
     using ThemeChangeCallback = void (*)(const SystemThemeInfo&, void*);
@@ -46,11 +47,15 @@ namespace system_theme_pp {
 
         SystemThemeInfo getCurrentThemeInfo() const;
 
+        bool callCallback() const;
+
       private:
 
         void*               themeChangeCallback_data = nullptr;
         ThemeChangeCallback themeChangeCallback      = nullptr;
         SystemTheme();
+        SystemTheme(const SystemTheme&) = delete;
+        SystemTheme& operator=(const SystemTheme&) = delete;
     };
 };  // namespace system_theme_pp
 

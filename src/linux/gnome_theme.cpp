@@ -8,17 +8,42 @@
 #include <system_theme_pp/system_theme.hpp>
 
 namespace system_theme_pp {
-// Helper: check if a GSettings schema exists
-static bool schemaExists(const char *schemaId) {
-  GSettingsSchemaSource *source = g_settings_schema_source_get_default();
-  GSettingsSchema *schema =
-      g_settings_schema_source_lookup(source, schemaId, TRUE);
-  if (schema) {
-    g_settings_schema_unref(schema);
-    return true;
+
+  // Helper: check if a GSettings schema exists
+  static bool schemaExists(const char *schemaId) {
+    GSettingsSchemaSource *source = g_settings_schema_source_get_default();
+    GSettingsSchema *schema =
+        g_settings_schema_source_lookup(source, schemaId, TRUE);
+    if (schema) {
+      g_settings_schema_unref(schema);
+      return true;
+    }
+    return false;
   }
-  return false;
-}
+
+  static std::string getCurrentGtkThemeName() {
+    if (!schemaExists("org.gnome.desktop.interface"))
+      return "";
+    GSettings *settings = g_settings_new("org.gnome.desktop.interface");
+    gchar *name = g_settings_get_string(settings, "gtk-theme");
+    g_object_unref(settings);
+    if (!name) return "";
+    std::string result(name);
+    g_free(name);
+    return result;
+  }
+
+  // Helper to force GTK to load a specific theme by setting GTK_THEME env var
+  // and resetting the style context
+  static bool forceGtkThemeReload() {
+    std::string themeName = getCurrentGtkThemeName();
+    if (!themeName.empty()) {
+    setenv("GTK_THEME", themeName.c_str(), 1);
+    return true;
+    }
+    return false;
+  }
+
 
 #define LOAD_SYM(name)                                                         \
   name = (name##_t)dlsym(handle, #name);                                       \
@@ -29,21 +54,21 @@ const GnomeTheme &GnomeTheme::getInstance() {
   static GnomeTheme* instance = nullptr;
   if (!instance) {
     // Try GTK4 first since it's newer, but fall back to GTK3 if not available
-    void* gtk4Handle = GTK4Theme::GTK4CheckLoaded();
-    if (gtk4Handle) {
-      instance = new GTK4Theme(gtk4Handle);
+    void* gtkHandle = GTK4Theme::GTK4CheckLoaded();
+    if (gtkHandle) {
+      instance = new GTK4Theme(gtkHandle);
     } else {
-      void* gtk3Handle = GTK3Theme::GTK3CheckLoaded();
-      if (gtk3Handle) {
-        instance = new GTK3Theme(gtk3Handle);
+      gtkHandle = GTK3Theme::GTK3CheckLoaded();
+      if (gtkHandle) {
+        instance = new GTK3Theme(gtkHandle);
       } else {
-        gtk4Handle = GTK4Theme::loadGTK4();
-        if (gtk4Handle) {
-          instance = new GTK4Theme(gtk4Handle);
+        gtkHandle = GTK3Theme::loadGTK3();
+        if (gtkHandle) {
+          instance = new GTK3Theme(gtkHandle);
         } else {
-          gtk3Handle = GTK3Theme::loadGTK3();
-          if (gtk3Handle) {
-            instance = new GTK3Theme(gtk3Handle);
+          gtkHandle = GTK4Theme::loadGTK4();
+          if (gtkHandle) {
+            instance = new GTK4Theme(gtkHandle);
           } else {
             throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
           }
@@ -169,6 +194,8 @@ void GTK3Theme::getFunctions() {
   LOAD_SYM(gtk_style_context_new);
   LOAD_SYM(gtk_style_context_lookup_color);
   LOAD_SYM(g_object_unref);
+  LOAD_SYM(gtk_style_context_reset_widgets);
+  LOAD_SYM(g_main_context_iteration);
 }
 
 ThemeColors GTK3Theme::getBackgroundColor() const {
@@ -176,6 +203,8 @@ ThemeColors GTK3Theme::getBackgroundColor() const {
     initCheck(); // ignore failure, let lookupNamedColor handle it
   }
 
+  forceGtkThemeReload();
+  ResetGTKStyleContext();
   auto color = Gdk3RGBACompat{};
   // Try modern names first, fall back to legacy
   const char *names[] = {"window_bg_color", "theme_base_color",
@@ -195,6 +224,8 @@ ThemeColors GTK3Theme::getForegroundColor() const {
     initCheck(); // ignore failure, let lookupNamedColor handle it
   }
 
+  forceGtkThemeReload();
+  ResetGTKStyleContext();
   auto color = Gdk3RGBACompat{};
   const char *names[] = {"window_fg_color", "theme_text_color",
                          "theme_fg_color", nullptr};
@@ -243,7 +274,7 @@ std::wstring getThemeName(std::wstring_view gtkVersion) {
         if(themeName) {
             std::wstringstream wss;
             wss << L"/usr/share/themes/" << themeName << L"/gtk-" << gtkVersion << L"/";
-            auto theme = SystemTheme::getInstance();
+            auto& theme = SystemTheme::getInstance();
             if (theme.isDarkMode()) {
                 wss << L"gtk-dark.css";
             } else {
@@ -260,6 +291,14 @@ void GTK3Theme::getCurrentThemeName(wchar_t *buffer,
   std::wstring themePath = getThemeName(L"3.0");
   std::wcsncpy(buffer, themePath.c_str(), bufferSize - 1);
   buffer[bufferSize - 1] = L'\0';
+}
+
+
+void GTK3Theme::ResetGTKStyleContext() const {
+  while (g_main_context_iteration(nullptr, FALSE));
+  if (gtk_style_context_reset_widgets) {
+    gtk_style_context_reset_widgets(nullptr);
+  }
 }
 
 void *GTK4Theme::GTK4CheckLoaded() {
@@ -310,6 +349,8 @@ void GTK4Theme::getFunctions() {
   LOAD_SYM(gtk_style_context_lookup_color);
   LOAD_SYM(gtk_window_destroy);
   LOAD_SYM(g_object_unref);
+  LOAD_SYM(gtk_style_context_reset_widgets);
+  LOAD_SYM(g_main_context_iteration);
 }
 
 ThemeColors GTK4Theme::getBackgroundColor() const {
@@ -320,6 +361,8 @@ ThemeColors GTK4Theme::getBackgroundColor() const {
     gtk_init_check();
   }
 
+  forceGtkThemeReload();
+  ResetGTKStyleContext();
   // GTK4: need a real widget to get a valid style context
   void *win = gtk_window_new();
   if (!win) {
@@ -350,6 +393,8 @@ ThemeColors GTK4Theme::getForegroundColor() const {
     gtk_init_check();
   }
 
+  forceGtkThemeReload();
+  ResetGTKStyleContext();
   // GTK4: need a real widget to get a valid style context
   void *win = gtk_window_new();
   if (!win) {
@@ -380,6 +425,12 @@ void GTK4Theme::getCurrentThemeName(wchar_t *buffer,
   buffer[bufferSize - 1] = L'\0';
 }
 
+void GTK4Theme::ResetGTKStyleContext() const {
+  while (g_main_context_iteration(nullptr, FALSE));
+  if (gtk_style_context_reset_widgets) {
+    gtk_style_context_reset_widgets();
+  }
+}
 
 #undef LOAD_SYM
 
