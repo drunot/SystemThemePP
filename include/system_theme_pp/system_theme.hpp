@@ -9,19 +9,6 @@
 
 namespace system_theme_pp {
 
-    struct SYSTEM_THEME_PP_API SystemThemeInfo {
-        wchar_t     themeName[256];
-        bool        isDarkMode;
-        ThemeColors foregroundColor;
-        ThemeColors backgroundColor;
-        ThemeColors accentColor;
-        wchar_t     systemDefaultFont[512];
-        float       systemDefaultFontScale;
-
-    };
-
-    using ThemeChangeCallback = void (*)(const SystemThemeInfo&, void*);
-
     // Add public member functions and variables here
     class SYSTEM_THEME_PP_API SystemTheme {
       public:
