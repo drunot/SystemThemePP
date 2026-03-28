@@ -16,7 +16,6 @@ namespace system_theme_pp {
         ThemeColors accentColor;
         wchar_t     systemDefaultFont[512];
         float       systemDefaultFontScale;
-
     };
 
     using ThemeChangeCallback = void (*)(const SystemThemeInfo&, void*);

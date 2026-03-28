@@ -1,7 +1,7 @@
 #include <fstream>
 #include <iostream>
-#include <vector>
 #include <mutex>
+#include <vector>
 
 #include <GLFW/glfw3.h>
 
@@ -18,7 +18,7 @@
 struct AppData {
     GLFWwindow*                      window;
     system_theme_pp::SystemThemeInfo info;
-    std::mutex                        mutex;
+    std::mutex                       mutex;
 };
 
 static GLuint          fontTexture;
@@ -66,13 +66,12 @@ void initFont(const wchar_t* fontPath, float fontSize) {
 
     std::wcsncpy(current_font_path, fontPath, sizeof(current_font_path) / sizeof(current_font_path[0]) - 1);
     current_font_path[sizeof(current_font_path) / sizeof(current_font_path[0]) - 1] = L'\0';
-    current_font_size = fontSize;
+    current_font_size                                                               = fontSize;
 
     std::vector<unsigned char> fontBuffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
     std::vector<unsigned char> bitmap(512 * 512);
     stbtt_BakeFontBitmap(fontBuffer.data(), 0, fontSize, bitmap.data(), 512, 512, 32, 96, charData);
-
 
     if(fontTexture) {
         glDeleteTextures(1, &fontTexture);
@@ -162,12 +161,13 @@ void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info
 }
 
 void themeChangeCallback(const system_theme_pp::SystemThemeInfo& info, void* data) {
-    auto appData  = static_cast<AppData*>(data);
+    std::cout << "Theme change detected, updating window\n";
+    auto appData = static_cast<AppData*>(data);
     {
         std::lock_guard<std::mutex> lock(appData->mutex);
         appData->info = info;  // update info from background thread
     }
-    glfwPostEmptyEvent();  // wake up glfwWaitEvents if sleeping
+    glfwPostEmptyEvent();      // wake up glfwWaitEvents if sleeping
 }
 
 int main() {
@@ -182,7 +182,7 @@ int main() {
 
     glfwMakeContextCurrent(appData.window);
 
-    auto& theme   = system_theme_pp::SystemTheme::getInstance();
+    auto& theme  = system_theme_pp::SystemTheme::getInstance();
     appData.info = theme.getCurrentThemeInfo();
     theme.setThemeChangeCallback(themeChangeCallback, &appData);
 
@@ -190,7 +190,7 @@ int main() {
     std::wcout << L"Current theme: " << appData.info.themeName << L"\n";
 
     while(!glfwWindowShouldClose(appData.window)) {
-        glfwWaitEvents();                          // sleep until an event occurs
+        glfwWaitEvents();  // sleep until an event occurs
 
         system_theme_pp::SystemThemeInfo infoTmp;
         {

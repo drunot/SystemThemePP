@@ -86,18 +86,14 @@ namespace system_theme_pp {
             winrt::Windows::Foundation::TypedEventHandler<winrt::Windows::UI::ViewManagement::UISettings,
                                                                                             winrt::Windows::Foundation::IInspectable>(
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
-                       winrt::Windows::Foundation::IInspectable const&) {
-                    callCallback();
-                }));
+                       winrt::Windows::Foundation::IInspectable const&) { callCallback(); }));
         colorChangeHooked = true;
 
         textScaleChangeRevoker = settings.TextScaleFactorChanged(
             winrt::Windows::Foundation::TypedEventHandler<winrt::Windows::UI::ViewManagement::UISettings,
                                                                                       winrt::Windows::Foundation::IInspectable>(
                 [this](winrt::Windows::UI::ViewManagement::UISettings const&,
-                       winrt::Windows::Foundation::IInspectable const&) {
-                    callCallback();
-                }));
+                       winrt::Windows::Foundation::IInspectable const&) { callCallback(); }));
 
         textScaleChangeHooked = true;
     };

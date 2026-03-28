@@ -6,7 +6,6 @@
 #include <system_theme_pp/core.hpp>
 #include <system_theme_pp/types.hpp>
 
-
 namespace system_theme_pp {
 
     // Add public member functions and variables here
@@ -41,7 +40,7 @@ namespace system_theme_pp {
         void*               themeChangeCallback_data = nullptr;
         ThemeChangeCallback themeChangeCallback      = nullptr;
         SystemTheme();
-        SystemTheme(const SystemTheme&) = delete;
+        SystemTheme(const SystemTheme&)            = delete;
         SystemTheme& operator=(const SystemTheme&) = delete;
     };
 };  // namespace system_theme_pp
