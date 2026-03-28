@@ -6,7 +6,6 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.ViewManagement.h>
 // clang-format on
-#include <iostream>
 
 #include <system_theme_pp/system_theme.hpp>
 

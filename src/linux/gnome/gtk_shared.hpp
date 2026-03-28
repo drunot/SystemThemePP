@@ -11,8 +11,7 @@
 
 namespace system_theme_pp::gtk {
 #define LOAD_SYM(name)                      \
-    name = (name##_t) dlsym(handle, #name); \
-    if(!name) std::cerr << "[GTK3Theme] Missing symbol: " #name "\n";
+    name = (name##_t) dlsym(handle, #name);
 
     std::string getCurrentGtkThemeName();
 

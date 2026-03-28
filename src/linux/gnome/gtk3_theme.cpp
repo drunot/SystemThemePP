@@ -2,8 +2,6 @@
 
 #include "gtk_shared.hpp"
 
-#include <iostream>
-
 #include <dlfcn.h>
 
 namespace system_theme_pp::gtk {
@@ -129,11 +127,6 @@ namespace system_theme_pp::gtk {
         if(gtk_style_context_reset_widgets) {
             gtk_style_context_reset_widgets(nullptr);
         }
-        // forceGtkThemeReload();
-        // while(g_main_context_iteration(nullptr, false));
-        // if(gtk_style_context_reset_widgets) {
-        //     gtk_style_context_reset_widgets(nullptr);
-        // }
     }
 
     GTK3Theme::~GTK3Theme() = default;

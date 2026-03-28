@@ -161,7 +161,6 @@ void drawWindow(GLFWwindow* window, const system_theme_pp::SystemThemeInfo& info
 }
 
 void themeChangeCallback(const system_theme_pp::SystemThemeInfo& info, void* data) {
-    std::cout << "Theme change detected, updating window\n";
     auto appData = static_cast<AppData*>(data);
     {
         std::lock_guard<std::mutex> lock(appData->mutex);

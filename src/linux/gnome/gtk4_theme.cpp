@@ -2,8 +2,6 @@
 
 #include "gtk_shared.hpp"
 
-#include <iostream>
-
 #include <dlfcn.h>
 
 namespace system_theme_pp::gtk {

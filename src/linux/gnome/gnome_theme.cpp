@@ -5,7 +5,6 @@
 #include "gtk4_theme.hpp"
 
 #include <cstring>
-#include <iostream>
 #include <sstream>
 
 #include <fontconfig/fontconfig.h>

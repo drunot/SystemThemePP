@@ -1,7 +1,5 @@
 #include "gtk_shared.hpp"
 
-#include <iostream>
-
 namespace system_theme_pp::gtk {
     std::string getCurrentGtkThemeName() {
         if(!schemaExists("org.gnome.desktop.interface")) return "";

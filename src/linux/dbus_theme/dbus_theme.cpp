@@ -1,7 +1,5 @@
 #include "dbus_theme.hpp"
 
-#include <iostream>
-
 #include <system_theme_pp/system_theme.hpp>
 
 namespace system_theme_pp {
@@ -125,7 +123,6 @@ namespace system_theme_pp {
     }
 
     void DBusTheme::setThemeChangeCallback(ThemeChangeCallback callback, void* data) {
-        std::cout << "DBusTheme: Setting theme change callback\n";
 
         if(signalThreadRunning) return;
 
@@ -171,6 +168,5 @@ namespace system_theme_pp {
     }
     void DBusTheme::internalOnThemeChanged() {
 
-        std::cout << "DBusTheme: Theme change detected\n";
     }
 }  // namespace system_theme_pp
