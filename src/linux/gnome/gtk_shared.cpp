@@ -18,7 +18,6 @@ namespace system_theme_pp::gtk {
     // and resetting the style context
     bool forceGtkThemeReload() {
         std::string themeName = getCurrentGtkThemeName();
-        std::cout << "Forcing GTK theme reload with theme: " << themeName << "\n";
         if(!themeName.empty()) {
             setenv("GTK_THEME", themeName.c_str(), 1);
             return true;

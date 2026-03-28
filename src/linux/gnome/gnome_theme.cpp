@@ -24,13 +24,13 @@ namespace system_theme_pp {
             if(gtkHandle) {
                 gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
             } else {
-                gtkHandle = gtk::GTK4Theme::loadGTK4();
+                gtkHandle = gtk::GTK3Theme::loadGTK3();
                 if(gtkHandle) {
-                    gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
+                    gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
                 } else {
-                    gtkHandle = gtk::GTK3Theme::loadGTK3();
+                    gtkHandle = gtk::GTK4Theme::loadGTK4();
                     if(gtkHandle) {
-                        gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
+                        gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
                     } else {
                         throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
                     }

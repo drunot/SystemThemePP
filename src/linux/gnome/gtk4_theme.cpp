@@ -67,7 +67,6 @@ namespace system_theme_pp::gtk {
             gtk_init_check();
         }
 
-        ResetGTKStyleContext();
         // GTK4: need a real widget to get a valid style context
         void* win = gtk_window_new();
         if(!win) {
@@ -96,7 +95,6 @@ namespace system_theme_pp::gtk {
             gtk_init_check();
         }
 
-        ResetGTKStyleContext();
         // GTK4: need a real widget to get a valid style context
         void* win = gtk_window_new();
         if(!win) {
@@ -125,9 +123,8 @@ namespace system_theme_pp::gtk {
     }
 
     void GTK4Theme::ResetGTKStyleContext() const {
-        std::cout << "Resetting GTK style context\n";
         forceGtkThemeReload();
-        while(g_main_context_iteration(nullptr, FALSE));
+        while(g_main_context_iteration(nullptr, false));
         if(gtk_style_context_reset_widgets) {
             gtk_style_context_reset_widgets();
         }

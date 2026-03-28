@@ -116,7 +116,6 @@ namespace system_theme_pp {
             if(!msg) continue;
 
             if(dbus_message_is_signal(msg, "org.freedesktop.portal.Settings", "SettingChanged")) {
-                std::cout << "DBusTheme: Received SettingChanged signal\n";
                 internalOnThemeChanged();
                 auto& systemTheme = SystemTheme::getInstance();
                 systemTheme.callCallback();

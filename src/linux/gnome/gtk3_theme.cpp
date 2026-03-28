@@ -124,12 +124,16 @@ namespace system_theme_pp::gtk {
     }
 
     void GTK3Theme::ResetGTKStyleContext() const {
-        std::cout << "Resetting GTK style context\n";
         forceGtkThemeReload();
-        while(g_main_context_iteration(nullptr, FALSE));
+        while(g_main_context_iteration(nullptr, false));
         if(gtk_style_context_reset_widgets) {
             gtk_style_context_reset_widgets(nullptr);
         }
+        // forceGtkThemeReload();
+        // while(g_main_context_iteration(nullptr, false));
+        // if(gtk_style_context_reset_widgets) {
+        //     gtk_style_context_reset_widgets(nullptr);
+        // }
     }
 
     GTK3Theme::~GTK3Theme() = default;
