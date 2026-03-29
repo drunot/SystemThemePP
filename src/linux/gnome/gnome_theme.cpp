@@ -4,16 +4,16 @@
 // #include "gtk3_theme.hpp"
 // #include "gtk4_theme.hpp"
 
+#include "gtk_shared.hpp"
+
 #include <cstring>
-#include <sstream>
 #include <filesystem>
+#include <sstream>
 
 #include <fontconfig/fontconfig.h>
 #include <gio/gio.h>
-#include <system_theme_pp/system_theme.hpp>
-#include "gtk_shared.hpp"
-
 #include <gnome_css/gnome_css.h>
+#include <system_theme_pp/system_theme.hpp>
 namespace system_theme_pp {
 
     GnomeTheme::GnomeTheme() = default;
@@ -112,7 +112,7 @@ namespace system_theme_pp {
         getCurrentThemeName(themePath, sizeof(themePath) / sizeof(wchar_t));
         // Convert wchar_t themePath to std::string (UTF-8)
         std::wstring ws(themePath);
-        std::string themePathStr(ws.begin(), ws.end());
+        std::string  themePathStr(ws.begin(), ws.end());
 
         auto color = get_color_from_css_c(themePathStr.c_str(), isDarkMode() ? "dark" : "light", "window_bg_color");
         if(color.valid) {
@@ -126,7 +126,7 @@ namespace system_theme_pp {
         getCurrentThemeName(themePath, sizeof(themePath) / sizeof(wchar_t));
         // Convert wchar_t themePath to std::string (UTF-8)
         std::wstring ws(themePath);
-        std::string themePathStr(ws.begin(), ws.end());
+        std::string  themePathStr(ws.begin(), ws.end());
 
         auto color = get_color_from_css_c(themePathStr.c_str(), isDarkMode() ? "dark" : "light", "window_fg_color");
         if(color.valid) {

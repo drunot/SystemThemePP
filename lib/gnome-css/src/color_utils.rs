@@ -1,4 +1,3 @@
-
 pub fn string_to_color(color_str: &str) -> Option<lightningcss::values::color::CssColor> {
     match color_str {
         "aliceblue" => {
@@ -1126,6 +1125,16 @@ pub fn string_to_color(color_str: &str) -> Option<lightningcss::values::color::C
                 red: 139,
                 green: 205,
                 blue: 50,
+                alpha: 0,
+            }))
+        }
+
+        // Special color keywords
+        "currentcolor" | "transparent" => {
+            return Some(From::from(lightningcss::values::color::RGBA {
+                red: 0,
+                green: 0,
+                blue: 0,
                 alpha: 0,
             }))
         }
