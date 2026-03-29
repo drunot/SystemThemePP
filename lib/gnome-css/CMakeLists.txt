@@ -6,11 +6,16 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 add_library(gnome-css STATIC ${CMAKE_CURRENT_LIST_DIR}/c_src/gnome_css.c ${CMAKE_CURRENT_LIST_DIR}/include/gnome_css/gnome_css.h)
 
+# Collect all Rust source files
+file(GLOB_RECURSE RUST_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.rs)
+
+
 # Custom target to build Rust static library
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_LIST_DIR}/target/release/libgnome_css.a
     COMMAND cargo build --release
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    DEPENDS ${RUST_SOURCES} Cargo.toml Cargo.lock
     COMMENT "Building Rust static library"
     VERBATIM
 )

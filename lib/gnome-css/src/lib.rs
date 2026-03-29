@@ -1,37 +1,74 @@
 use lightningcss::stylesheet::{ParserOptions, StyleSheet};
 use lightningcss::traits::ToCss;
-
 use std::path::Path;
-
+mod color_utils;
+use color_utils::string_to_color;
 use std::fs;
 
-// fn get_color_from_function(
-//     stylesheet: &StyleSheet,
-//     function_token: &lightningcss::properties::custom::Function,
-// ) -> Option<lightningcss::values::color::CssColor> {
-//     let mut args = Vec::<lightningcss::properties::custom::TokenOrValue>::new();
-//     for arg in &function_token.arguments.0 {
-//         if let lightningcss::properties::custom::TokenOrValue::Token(token) = arg {
-//             match token{
-//                 lightningcss::properties::custom::Token::AtKeyword(keyword) => {
-//                     if let Some(color) = get_define_color_by_name(stylesheet, &keyword.to_string()) {
-//                         args.push(lightningcss::properties::custom::TokenOrValue::Color(color));
-//                     }
-//                 },
-//                 lightningcss::properties::custom::Token::WhiteSpace(_) => {},
-//                 _ => args.push(arg.clone()),
-//             }
-//         } else {
-//             args.push(arg.clone());
-//         }
-//     }
-//     let _func = lightningcss::properties::custom::Function {
-//         name: function_token.name.clone(),
-//         arguments: lightningcss::properties::custom::TokenList(args),
-//     };
-//     match
-//     None
-// }
+
+
+fn get_color_from_function(
+    stylesheet: &StyleSheet,
+    prefer_color_scheme: &str,
+    function_token: &lightningcss::properties::custom::Function,
+) -> Option<lightningcss::values::color::CssColor> {
+
+    // First collect all variables.
+    let mut args = Vec::<lightningcss::properties::custom::TokenOrValue>::new();
+    for arg in &function_token.arguments.0 {
+        if let lightningcss::properties::custom::TokenOrValue::Token(token) = arg {
+            match token {
+                lightningcss::properties::custom::Token::AtKeyword(keyword) => {
+                    if let (Some(color), _) = get_define_color_by_name(
+                        stylesheet,
+                        prefer_color_scheme,
+                        &keyword.to_string(),
+                    ) {
+                        args.push(lightningcss::properties::custom::TokenOrValue::Color(color));
+                    }
+                }
+                lightningcss::properties::custom::Token::WhiteSpace(_) => {}
+                lightningcss::properties::custom::Token::Ident(ident) => {
+                    if let Some(color) = string_to_color(&ident.to_string()) {
+                        args.push(lightningcss::properties::custom::TokenOrValue::Color(color));
+                    } else {
+                        args.push(arg.clone());
+                    }
+                }
+                _ => args.push(arg.clone()),
+            }
+        } else {
+            args.push(arg.clone());
+        }
+    }
+    let func = lightningcss::properties::custom::Function {
+        name: function_token.name.clone(),
+        arguments: lightningcss::properties::custom::TokenList(args),
+    };
+    match func.name.as_ref() {
+        "color-mix" => {
+            // TODO implement color-mix
+            return None;
+        }
+        "color-contrast" => {
+            // TODO implement color-contrast
+            return None;
+        }
+        "oklab" => {
+            // TODO implement oklab
+            return None;
+        }
+        "min" => {
+            // TODO implement min()
+            return None;
+        }
+        "max" => {
+            // TODO implement max()
+            return None;
+        }
+        _ => return None,
+    }
+}
 
 fn get_variable_value_by_name(
     stylesheet: &StyleSheet,
@@ -44,17 +81,21 @@ fn get_variable_value_by_name(
             return get_define_color_by_name(stylesheet, prefer_color_scheme, &keyword.to_string())
                 .0;
         }
+        if let lightningcss::properties::custom::Token::Ident(ident) = token {
+            if let Some(color) = string_to_color(&ident.to_string()) {
+                return Some(color);
+            }
+        }
     }
     // If the token is already a color we can return it directly.
     if let lightningcss::properties::custom::TokenOrValue::Color(value) = &style_rule.prelude.0[2] {
         return Some(value.clone());
     }
 
-    // TODO handle functions like color-mix and color-contrast, OKLAB, min() and max()
-    // if let lightningcss::properties::custom::TokenOrValue::Function(_func) = &style_rule.prelude.0[2]
-    // {
-    //     return get_color_from_function(stylesheet, func);
-    // }
+    if let lightningcss::properties::custom::TokenOrValue::Function(func) = &style_rule.prelude.0[2]
+    {
+        return get_color_from_function(stylesheet, prefer_color_scheme, func);
+    }
     None
 }
 
