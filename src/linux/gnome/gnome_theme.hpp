@@ -11,6 +11,7 @@
 
 #include <system_theme_pp/core.hpp>
 #include <system_theme_pp/types.hpp>
+#include <gio/gio.h>
 
 namespace system_theme_pp {
 
@@ -18,19 +19,21 @@ namespace system_theme_pp {
       public:
 
         GnomeTheme();
+        ~GnomeTheme() override;
         virtual ThemeColors getBackgroundColor() const override;
         virtual ThemeColors getForegroundColor() const override;
         float               getSystemDefaultFontScale() const override;
         void                getSystemDefaultFont(wchar_t* buffer, size_t bufferSize) const override;
         virtual void        getCurrentThemeName(wchar_t* buffer, size_t bufferSize) const override;
 
-      protected:
-
-        virtual void internalOnThemeChanged() override;
-
       private:
 
+        static void on_theme_changed(GSettings* settings, gchar* key, gpointer user_data);
+        void setup_theme_change_listener();
+        void teardown_theme_change_listener();
         // std::unique_ptr<system_theme_pp::gtk::GTKThemeInterface> gtkTheme;
+
+        gulong themeChangedSignalId = 0;
     };
 }  // namespace system_theme_pp
 

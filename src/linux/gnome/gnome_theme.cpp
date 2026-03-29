@@ -1,46 +1,76 @@
 #include "gnome_theme.hpp"
 
 #include "gnome_shared.hpp"
-// #include "gtk3_theme.hpp"
-// #include "gtk4_theme.hpp"
 
-#include "gtk_shared.hpp"
-
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <sstream>
+#include <thread>
 
 #include <fontconfig/fontconfig.h>
 #include <gio/gio.h>
 #include <gnome_css/gnome_css.h>
 #include <system_theme_pp/system_theme.hpp>
 namespace system_theme_pp {
+    void GnomeTheme::on_theme_changed(GSettings* settings, gchar* key, gpointer user_data) {
+        system_theme_pp::forceGtkThemeReload();  
+    }
+    void GnomeTheme::setup_theme_change_listener(){
+        GSettings* settings = g_settings_new("org.gnome.desktop.interface");
+        themeChangedSignalId = g_signal_connect(settings, "changed", G_CALLBACK(on_theme_changed), nullptr);
+        // Keep 'settings' alive as long as you want to listen
+    }
+    void GnomeTheme::teardown_theme_change_listener() {
+        GSettings* settings = g_settings_new("org.gnome.desktop.interface");
+        if(themeChangedSignalId) {
+            g_signal_handler_disconnect(settings, themeChangedSignalId);
+            themeChangedSignalId = 0;
+        }
+    }
 
-    GnomeTheme::GnomeTheme() = default;
-    // {
-    //     // Try GTK4 first since it's newer, but fall back to GTK3 if not available
-    //     void* gtkHandle = gtk::GTK4Theme::GTKCheckLoaded();
-    //     if(gtkHandle) {
-    //         gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
-    //     } else {
-    //         gtkHandle = gtk::GTK3Theme::GTKCheckLoaded();
-    //         if(gtkHandle) {
-    //             gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
-    //         } else {
-    //             gtkHandle = gtk::GTK4Theme::loadGTK();
-    //             if(gtkHandle) {
-    //                 gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
-    //             } else {
-    //                 gtkHandle = gtk::GTK3Theme::loadGTK();
-    //                 if(gtkHandle) {
-    //                     gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
-    //                 } else {
-    //                     throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+    // Callback function for the signal
+    static void on_theme_changed(GSettings* settings, gchar* key, gpointer user_data) {
+        system_theme_pp::forceGtkThemeReload();  
+    }
+
+    // Call this during initialization
+    void setup_theme_change_listener() {
+        GSettings* settings = g_settings_new("org.gnome.desktop.interface");
+        g_signal_connect(settings, "changed", G_CALLBACK(on_theme_changed), nullptr);
+        // Keep 'settings' alive as long as you want to listen
+    }
+
+    GnomeTheme::GnomeTheme() {
+        // Try GTK4 first since it's newer, but fall back to GTK3 if not available
+        // void* gtkHandle = gtk::GTK4Theme::GTKCheckLoaded();
+        // if(gtkHandle) {
+        //     gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
+        // } else {
+        //     gtkHandle = gtk::GTK3Theme::GTKCheckLoaded();
+        //     if(gtkHandle) {
+        //         gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
+        //     } else {
+        //         gtkHandle = gtk::GTK4Theme::loadGTK();
+        //         if(gtkHandle) {
+        //             gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
+        //         } else {
+        //             gtkHandle = gtk::GTK3Theme::loadGTK();
+        //             if(gtkHandle) {
+        //                 gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
+        //             } else {
+        //                 throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
+        //             }
+        //         }
+        //     }
+        // }
+        setup_theme_change_listener();
+    }
+
+    GnomeTheme::~GnomeTheme() {
+        teardown_theme_change_listener();
+    }
+
 
     float GnomeTheme::getSystemDefaultFontScale() const {
         if(schemaExists("org.gnome.desktop.interface")) {
@@ -136,20 +166,12 @@ namespace system_theme_pp {
     }
 
     void GnomeTheme::getCurrentThemeName(wchar_t* buffer, size_t bufferSize) const {
-        std::wstring themePath = gtk::getThemeName(L"4.0");
+        std::wstring themePath = getThemeName(L"4.0");
         if(!std::filesystem::exists(themePath)) {
-            themePath = gtk::getThemeName(L"3.0");
+            themePath = getThemeName(L"3.0");
         }
         std::wcsncpy(buffer, themePath.c_str(), bufferSize - 1);
         buffer[bufferSize - 1] = L'\0';
-    }
-
-    void GnomeTheme::internalOnThemeChanged() {
-        // auto& systemTheme     = SystemTheme::getInstance();
-        // auto  systemThemeInfo = systemTheme.getCurrentThemeInfo();
-        // gtkTheme->ResetGTKStyleContext();
-        gtk::forceGtkThemeReload();
-        // std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Add a short delay
     }
 
 }  // namespace system_theme_pp
