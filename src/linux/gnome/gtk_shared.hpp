@@ -10,8 +10,7 @@
 #include <system_theme_pp/system_theme.hpp>
 
 namespace system_theme_pp::gtk {
-#define LOAD_SYM(name)                      \
-    name = (name##_t) dlsym(handle, #name);
+#define LOAD_SYM(name) name = (name##_t) dlsym(handle, #name);
 
     std::string getCurrentGtkThemeName();
 

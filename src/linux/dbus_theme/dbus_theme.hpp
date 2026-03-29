@@ -3,11 +3,6 @@
 
 #include "../linux_theme_interface/linux_theme_interface.hpp"
 
-#include <atomic>
-#include <thread>
-
-#include <dbus/dbus.h>
-
 namespace system_theme_pp {
     class SYSTEM_THEME_PP_PRIVATE DBusTheme : public LinuxThemeInterface {
       public:
@@ -21,7 +16,6 @@ namespace system_theme_pp {
         virtual ThemeColors getAccentColor() const;
 
         virtual void setThemeChangeCallback(ThemeChangeCallback callback, void* data = nullptr) override;
-
         virtual void removeThemeChangeCallback() override;
 
         virtual void  getSystemDefaultFont(wchar_t* buffer, size_t bufferSize) const = 0;
@@ -33,14 +27,6 @@ namespace system_theme_pp {
 
         virtual void internalOnThemeChanged();
 
-      private:
-
-        static DBusMessage* getAppearance(const char* key);
-        void                signalThreadFunc();
-
-        DBusConnection*   signalConn = nullptr;
-        std::thread       signalThread;
-        std::atomic<bool> signalThreadRunning{false};
     };
 }  // namespace system_theme_pp
 

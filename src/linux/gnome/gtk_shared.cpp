@@ -1,4 +1,5 @@
 #include "gtk_shared.hpp"
+#include <iostream>
 
 namespace system_theme_pp::gtk {
     std::string getCurrentGtkThemeName() {
@@ -16,6 +17,9 @@ namespace system_theme_pp::gtk {
     // and resetting the style context
     bool forceGtkThemeReload() {
         std::string themeName = getCurrentGtkThemeName();
+        std::cout << "Current GTK theme: " << themeName << std::endl;
+        std::cout << "Current GTK theme: " << themeName << std::endl;
+        std::cout << "Current GTK theme: " << themeName << std::endl;
         if(!themeName.empty()) {
             setenv("GTK_THEME", themeName.c_str(), 1);
             return true;

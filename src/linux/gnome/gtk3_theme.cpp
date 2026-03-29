@@ -6,7 +6,7 @@
 
 namespace system_theme_pp::gtk {
 
-    void* GTK3Theme::GTK3CheckLoaded() {
+    void* GTK3Theme::GTKCheckLoaded() {
         const char* gtk3libs[] = {"libgtk-3.so.0", "libgtk-3.so", nullptr};
         for(const char** lib = gtk3libs; *lib != nullptr; lib++) {
             auto handle = dlopen(*lib, RTLD_LAZY | RTLD_NOLOAD);
@@ -17,7 +17,7 @@ namespace system_theme_pp::gtk {
         return nullptr;
     }
 
-    void* GTK3Theme::loadGTK3() {
+    void* GTK3Theme::loadGTK() {
         const char* gtk3libs[] = {"libgtk-3.so.0", "libgtk-3.so", nullptr};
         for(const char** lib = gtk3libs; *lib != nullptr; lib++) {
             auto handle = dlopen(*lib, RTLD_LAZY | RTLD_LOCAL);
@@ -31,10 +31,10 @@ namespace system_theme_pp::gtk {
     GTK3Theme::GTK3Theme() {
         const char* gtk3libs[] = {"libgtk-3.so.0", "libgtk-3.so", nullptr};
         if(!handle) {
-            handle = GTK3CheckLoaded();
+            handle = GTKCheckLoaded();
         }
         if(!handle) {
-            handle = loadGTK3();
+            handle = loadGTK();
         }
 
         getFunctions();
@@ -123,7 +123,11 @@ namespace system_theme_pp::gtk {
 
     void GTK3Theme::ResetGTKStyleContext() const {
         forceGtkThemeReload();
-        while(g_main_context_iteration(nullptr, false));
+        for(int i = 0; i < 5; i++) {
+            if(!g_main_context_iteration(nullptr, false)) {
+                break;
+            }
+        }
         if(gtk_style_context_reset_widgets) {
             gtk_style_context_reset_widgets(nullptr);
         }

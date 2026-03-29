@@ -15,8 +15,8 @@ namespace system_theme_pp::gtk {
         GTK3Theme(void* _handler);
         ~GTK3Theme() override;
 
-        static void* GTK3CheckLoaded();
-        static void* loadGTK3();
+        static void* GTKCheckLoaded();
+        static void* loadGTK();
 
         bool        isInitialized() const;
         bool        initCheck() const;

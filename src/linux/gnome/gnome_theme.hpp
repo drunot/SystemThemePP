@@ -2,8 +2,8 @@
 #define FD9366B4_C10B_43BB_B884_2476555045AD
 
 #include "../dbus_theme/dbus_theme.hpp"
-#include "gtk3_theme.hpp"
-#include "gtk4_theme.hpp"
+// #include "gtk3_theme.hpp"
+// #include "gtk4_theme.hpp"
 
 #include <cstdint>
 #include <cstdlib>
@@ -30,7 +30,7 @@ namespace system_theme_pp {
 
       private:
 
-        std::unique_ptr<system_theme_pp::gtk::GTKThemeInterface> gtkTheme;
+        // std::unique_ptr<system_theme_pp::gtk::GTKThemeInterface> gtkTheme;
     };
 }  // namespace system_theme_pp
 

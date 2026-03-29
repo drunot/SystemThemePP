@@ -1,0 +1,11 @@
+[package]
+name = "gnome-css"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+libc = "0.2.183"
+lightningcss = "1.0.0-alpha.71"
+
+[lib]
+crate-type = ["staticlib"]

@@ -6,7 +6,7 @@
 
 namespace system_theme_pp::gtk {
 
-    void* GTK4Theme::GTK4CheckLoaded() {
+    void* GTK4Theme::GTKCheckLoaded() {
         const char* gtk4libs[] = {"libgtk-4.so.0", "libgtk-4.so", nullptr};
         for(const char** lib = gtk4libs; *lib != nullptr; lib++) {
             auto handle = dlopen(*lib, RTLD_LAZY | RTLD_NOLOAD);
@@ -17,7 +17,7 @@ namespace system_theme_pp::gtk {
         return nullptr;
     }
 
-    void* GTK4Theme::loadGTK4() {
+    void* GTK4Theme::loadGTK() {
         const char* gtk4libs[] = {"libgtk-4.so.0", "libgtk-4.so", nullptr};
         for(const char** lib = gtk4libs; *lib != nullptr; lib++) {
             auto handle = dlopen(*lib, RTLD_LAZY | RTLD_LOCAL);
@@ -32,10 +32,10 @@ namespace system_theme_pp::gtk {
 
         const char* gtk4libs[] = {"libgtk-4.so.0", "libgtk-4.so", nullptr};
         if(!handle) {
-            handle = GTK4CheckLoaded();
+            handle = GTKCheckLoaded();
         }
         if(!handle) {
-            handle = loadGTK4();
+            handle = loadGTK();
         }
         getFunctions();
     }
@@ -56,6 +56,9 @@ namespace system_theme_pp::gtk {
         LOAD_SYM(g_object_unref);
         LOAD_SYM(gtk_style_context_reset_widgets);
         LOAD_SYM(g_main_context_iteration);
+        LOAD_SYM(gtk_widget_realize);
+        LOAD_SYM(gtk_widget_show);
+        LOAD_SYM(gtk_widget_queue_draw);
     }
 
     ThemeColors GTK4Theme::getBackgroundColor() const {
@@ -70,6 +73,12 @@ namespace system_theme_pp::gtk {
         if(!win) {
             return {30, 30, 30};
         }
+
+        ResetGTKStyleContext();
+        // Realize and show the window to ensure style is applied
+        gtk_widget_realize(win);
+        gtk_widget_show(win);
+        gtk_widget_queue_draw(win);
 
         void* ctx   = gtk_widget_get_style_context(win);
         auto  color = Gdk4RGBACompat{};
@@ -93,11 +102,16 @@ namespace system_theme_pp::gtk {
             gtk_init_check();
         }
 
+        ResetGTKStyleContext();
         // GTK4: need a real widget to get a valid style context
         void* win = gtk_window_new();
         if(!win) {
             return {30, 30, 30};
         }
+        // Realize and show the window to ensure style is applied
+        gtk_widget_realize(win);
+        gtk_widget_show(win);
+        gtk_widget_queue_draw(win);
 
         void* ctx   = gtk_widget_get_style_context(win);
         auto  color = Gdk4RGBACompat{};
@@ -123,11 +137,14 @@ namespace system_theme_pp::gtk {
     void GTK4Theme::ResetGTKStyleContext() const {
         forceGtkThemeReload();
         while(g_main_context_iteration(nullptr, false));
+
         if(gtk_style_context_reset_widgets) {
             gtk_style_context_reset_widgets();
         }
     }
 
-    GTK4Theme::~GTK4Theme() = default;
+    GTK4Theme::~GTK4Theme(){
+        
+    }
 
 }  // namespace system_theme_pp::gtk

@@ -14,8 +14,8 @@ namespace system_theme_pp::gtk {
         GTK4Theme(void* _handler);
         ~GTK4Theme() override;
 
-        static void* GTK4CheckLoaded();
-        static void* loadGTK4();
+        static void* GTKCheckLoaded();
+        static void* loadGTK();
 
         ThemeColors getBackgroundColor() const override;
         ThemeColors getForegroundColor() const override;
@@ -24,6 +24,9 @@ namespace system_theme_pp::gtk {
         void ResetGTKStyleContext() const override;
 
       private:
+
+        void ensure_gtk_main_loop();
+        void stop_gtk_main_loop();
 
         void getFunctions();
 
@@ -56,6 +59,15 @@ namespace system_theme_pp::gtk {
 
         using g_main_context_iteration_t                    = bool (*)(void*, bool);
         g_main_context_iteration_t g_main_context_iteration = nullptr;
+
+        using gtk_widget_realize_t          = void (*)(void* widget);
+        gtk_widget_realize_t gtk_widget_realize = nullptr;
+
+        using gtk_widget_show_t          = void (*)(void* widget);
+        gtk_widget_show_t gtk_widget_show = nullptr;
+
+        using gtk_widget_queue_draw_t          = void (*)(void* widget);
+        gtk_widget_queue_draw_t gtk_widget_queue_draw = nullptr;
 
         void* handle = nullptr;
     };

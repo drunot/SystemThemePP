@@ -1,42 +1,46 @@
 #include "gnome_theme.hpp"
 
 #include "gnome_shared.hpp"
-#include "gtk3_theme.hpp"
-#include "gtk4_theme.hpp"
+// #include "gtk3_theme.hpp"
+// #include "gtk4_theme.hpp"
 
 #include <cstring>
 #include <sstream>
+#include <filesystem>
 
 #include <fontconfig/fontconfig.h>
 #include <gio/gio.h>
 #include <system_theme_pp/system_theme.hpp>
+#include "gtk_shared.hpp"
 
+#include <gnome_css/gnome_css.h>
 namespace system_theme_pp {
 
-    GnomeTheme::GnomeTheme() {
-        // Try GTK4 first since it's newer, but fall back to GTK3 if not available
-        void* gtkHandle = gtk::GTK4Theme::GTK4CheckLoaded();
-        if(gtkHandle) {
-            gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
-        } else {
-            gtkHandle = gtk::GTK3Theme::GTK3CheckLoaded();
-            if(gtkHandle) {
-                gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
-            } else {
-                gtkHandle = gtk::GTK3Theme::loadGTK3();
-                if(gtkHandle) {
-                    gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
-                } else {
-                    gtkHandle = gtk::GTK4Theme::loadGTK4();
-                    if(gtkHandle) {
-                        gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
-                    } else {
-                        throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
-                    }
-                }
-            }
-        }
-    }
+    GnomeTheme::GnomeTheme() = default;
+    // {
+    //     // Try GTK4 first since it's newer, but fall back to GTK3 if not available
+    //     void* gtkHandle = gtk::GTK4Theme::GTKCheckLoaded();
+    //     if(gtkHandle) {
+    //         gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
+    //     } else {
+    //         gtkHandle = gtk::GTK3Theme::GTKCheckLoaded();
+    //         if(gtkHandle) {
+    //             gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
+    //         } else {
+    //             gtkHandle = gtk::GTK4Theme::loadGTK();
+    //             if(gtkHandle) {
+    //                 gtkTheme = std::make_unique<gtk::GTK4Theme>(gtkHandle);
+    //             } else {
+    //                 gtkHandle = gtk::GTK3Theme::loadGTK();
+    //                 if(gtkHandle) {
+    //                     gtkTheme = std::make_unique<gtk::GTK3Theme>(gtkHandle);
+    //                 } else {
+    //                     throw std::runtime_error("Failed to load GTK3 or GTK4 libraries");
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     float GnomeTheme::getSystemDefaultFontScale() const {
         if(schemaExists("org.gnome.desktop.interface")) {
@@ -104,31 +108,48 @@ namespace system_theme_pp {
     }
 
     ThemeColors GnomeTheme::getBackgroundColor() const {
-        if(!gtkTheme) return {30, 30, 30};
+        wchar_t themePath[512];
+        getCurrentThemeName(themePath, sizeof(themePath) / sizeof(wchar_t));
+        // Convert wchar_t themePath to std::string (UTF-8)
+        std::wstring ws(themePath);
+        std::string themePathStr(ws.begin(), ws.end());
 
-        return gtkTheme->getBackgroundColor();
+        auto color = get_color_from_css_c(themePathStr.c_str(), isDarkMode() ? "dark" : "light", "window_bg_color");
+        if(color.valid) {
+            return {color.r, color.g, color.b};
+        }
+        return isDarkMode() ? ThemeColors{0, 0, 0} : ThemeColors{255, 255, 255};
     }
 
     ThemeColors GnomeTheme::getForegroundColor() const {
-        if(!gtkTheme) return {30, 30, 30};
+        wchar_t themePath[512];
+        getCurrentThemeName(themePath, sizeof(themePath) / sizeof(wchar_t));
+        // Convert wchar_t themePath to std::string (UTF-8)
+        std::wstring ws(themePath);
+        std::string themePathStr(ws.begin(), ws.end());
 
-        return gtkTheme->getForegroundColor();
+        auto color = get_color_from_css_c(themePathStr.c_str(), isDarkMode() ? "dark" : "light", "window_fg_color");
+        if(color.valid) {
+            return {color.r, color.g, color.b};
+        }
+        return isDarkMode() ? ThemeColors{255, 255, 255} : ThemeColors{30, 30, 30};
     }
 
     void GnomeTheme::getCurrentThemeName(wchar_t* buffer, size_t bufferSize) const {
-        if(!gtkTheme) {
-            std::wcsncpy(buffer, L"Unknown", bufferSize - 1);
-            buffer[bufferSize - 1] = L'\0';
-            return;
+        std::wstring themePath = gtk::getThemeName(L"4.0");
+        if(!std::filesystem::exists(themePath)) {
+            themePath = gtk::getThemeName(L"3.0");
         }
-
-        gtkTheme->getCurrentThemeName(buffer, bufferSize);
+        std::wcsncpy(buffer, themePath.c_str(), bufferSize - 1);
+        buffer[bufferSize - 1] = L'\0';
     }
 
     void GnomeTheme::internalOnThemeChanged() {
-        auto& systemTheme     = SystemTheme::getInstance();
-        auto  systemThemeInfo = systemTheme.getCurrentThemeInfo();
-        gtkTheme->ResetGTKStyleContext();
+        // auto& systemTheme     = SystemTheme::getInstance();
+        // auto  systemThemeInfo = systemTheme.getCurrentThemeInfo();
+        // gtkTheme->ResetGTKStyleContext();
+        gtk::forceGtkThemeReload();
+        // std::this_thread::sleep_for(std::chrono::milliseconds(100));  // Add a short delay
     }
 
 }  // namespace system_theme_pp

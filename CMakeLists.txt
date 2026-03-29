@@ -14,6 +14,8 @@ else()
 endif()
 
 
+add_subdirectory(lib/gnome-css)
+
 message("Generator: ${IS_VS_GENERATOR}")
 # Set default build type to Release for single-config generators.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -85,7 +87,7 @@ elseif(UNIX AND NOT APPLE)
     pkg_check_modules(FONTCONFIG REQUIRED fontconfig)
     pkg_check_modules(GIO REQUIRED gio-2.0)
     find_package(DBus1 REQUIRED)
-    target_link_libraries(system_theme_pp PRIVATE dbus-1)
+    target_link_libraries(system_theme_pp PRIVATE dbus-1 gnome-css)
 
     target_include_directories(system_theme_pp PRIVATE 
         ${CMAKE_CURRENT_LIST_DIR}/src/linux 
